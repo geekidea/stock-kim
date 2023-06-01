@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2019-2029 geekidea(https://github.com/geekidea)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.geekidea.stock.mapper.StockKLineMapper">
+    <select id="getStockKLineById" resultType="io.geekidea.stock.dto.vo.StockKLineQueryVo">
+        select *
+        from stock_k_line
+        where id = #{id}
+    </select>
+
+    <select id="getStockKLinePageList" resultType="io.geekidea.stock.dto.vo.StockKLineQueryVo">
+        select *
+        from stock_k_line
+    </select>
+
+    <select id="getStockKLineDateDiffVo" resultType="io.geekidea.stock.dto.vo.StockKLineDateDiffVo">
+        select x.line_date, y.latest_date, datediff(y.latest_date, x.line_date) diff_day
+        from (
+                 select 1 as id, max(line_date) as line_date
+                 from stock_k_line
+                 where stock_code = (
+                     select stock_code
+                     from stock
+                     order by stock_code desc
+                     limit 1)
+             ) x
+                 inner join (
+            select 1 as id, real_date as latest_date
+            from stock
+            limit 1
+        ) y
+                            on x.id = y.id
+    </select>
+
+    <select id="getUpdateKLineIncreaseStartDate" resultType="java.lang.String">
+        select tb.line_date
+        from (
+                 select line_date
+                 from stock_k_line
+                 where line_date > date_sub(now(), interval 20 day)
+                 group by line_date
+             ) tb
+        where tb.line_date &lt; (
+            select line_date
+            from stock_k_line
+            where line_date > date_sub(now(), interval 10 day)
+              and increase is null
+            group by line_date
+            having count(1) > 20
+            order by line_date
+            limit 1
+        )
+        order by tb.line_date desc
+        limit 1
+    </select>
+
+    <select id="getLineDates" resultType="java.lang.String">
+        select line_date
+        from stock_k_line
+        where line_date >= #{startDate}
+        group by line_date
+        having count(1) > 3000
+    </select>
+
+    <select id="getStockKLineListByLineDates" resultType="io.geekidea.stock.entity.StockKLine">
+        select * from stock_k_line
+        where line_code = #{lineCode}
+        and line_date in
+        <foreach collection="lineDates" item="lineDate" open="(" separator="," close=")">
+            #{lineDate}
+        </foreach>
+    </select>
+
+    <select id="getStockKLineListByStockCodeAndLimit" resultType="io.geekidea.stock.entity.StockKLine">
+        select *
+        from stock_k_line
+        where line_code = #{lineCode}
+        order by line_date desc
+        limit #{limit}
+    </select>
+
+    <select id="getMaxLineDate" resultType="java.lang.String">
+        select max(line_date)
+        from stock_k_line
+    </select>
+
+    <select id="getStockKLineListByStockCode" resultType="io.geekidea.stock.entity.StockKLine">
+        select *
+        from stock_k_line
+        where line_code = #{stockCode}
+        order by line_date desc
+    </select>
+    <update id="updateRealKLineData">
+        insert stock_k_line
+        (line_date, line_code, line_name, open_price, close_price, low_price, high_price,
+         trade_number, trade_amount, amplitude, increase, line_batch_no)
+        select real_date,
+               stock_code,
+               stock_name,
+               open_price,
+               price,
+               low_price,
+               high_price,
+               trade_number,
+               trade_amount,
+               amplitude,
+               increase,
+               batch_no
+        from stock
+    </update>
+
+    <select id="getTop301StockKLineListByStockCode" resultType="io.geekidea.stock.entity.StockKLine">
+        select *
+        from stock_k_line
+        where stock_code = #{stockCode}
+        <if test="lineDate!=null and lineDate !=''">
+            and line_date &lt;= #{lineDate}
+        </if>
+        order by line_date desc
+        limit 301
+    </select>
+
+    <select id="getStockKLineBasicList" resultType="io.geekidea.stock.dto.vo.StockKLineBasicVo">
+        select
+        line_date,
+        stock_code,
+        stock_name,
+        open_price,
+        close_price,
+        low_price,
+        high_price,
+        trade_number,
+        turnover_rate,
+        trade_amount,
+        amplitude,
+        increase
+        from stock_k_line
+        where line_date >= #{startDate}
+        <if test="lineCode != null and lineCode != ''">
+            and stock_code = #{lineCode}
+        </if>
+        <if test="lineName != null and lineName != ''">
+            and line_name = #{lineName}
+        </if>
+        order by line_date
+    </select>
+
+    <delete id="deleteByStockCodes">
+        delete from stock_k_line
+        where stock_code in
+        <foreach collection="deleteStockCodes" item="deleteStockCode" open="(" separator="," close=")">
+            #{deleteStockCode}
+        </foreach>
+    </delete>
+
+    <delete id="deleteStockKLineByLineDate">
+        delete
+        from stock_k_line
+        where line_date = #{lastTradeDate}
+    </delete>
+
+    <select id="getStockKLineListByStockCodesAndDate" resultType="io.geekidea.stock.entity.StockKLine">
+        select * from stock_k_line
+        where line_date = #{lineDate}
+        and stock_code in
+        <foreach collection="stockCodes" item="stockCode" open="(" separator="," close=")">
+            #{stockCode}
+        </foreach>
+    </select>
+
+</mapper>

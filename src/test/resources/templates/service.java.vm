@@ -1,0 +1,86 @@
+package ${package.Service};
+
+import ${package.Entity}.${entity};
+import ${superServiceClassPackage};
+#if(${cfg.generatorPageMethod})
+import ${cfg.queryParamPath};
+#end
+import ${cfg.queryVoPath};
+import ${cfg.paging};
+
+import java.io.Serializable;
+
+/**
+ * <pre>
+ * $!{table.comment} 服务类
+ * </pre>
+ *
+ * http://stock.kim
+ * doc.stock.kim
+ *
+ * @author ${author}
+ * @since ${date}
+ */
+#if(${kotlin})
+interface ${table.serviceName} : ${superServiceClass}<${entity}>
+#else
+public interface ${table.serviceName} extends ${superServiceClass}<${entity}> {
+    #if(${cfg.generatorAddMethod})
+
+    /**
+     * 保存
+     *
+     * @param ${cfg.entityObjectName}
+     * @return
+     * @throws Exception
+     */
+    boolean save${entity}(${entity} ${cfg.entityObjectName}) throws Exception;
+    #end
+    #if(${cfg.generatorUpdateMethod})
+
+    /**
+     * 修改
+     *
+     * @param ${cfg.entityObjectName}
+     * @return
+     * @throws Exception
+     */
+    boolean update${entity}(${entity} ${cfg.entityObjectName}) throws Exception;
+    #end
+    #if(${cfg.generatorDeleteMethod})
+
+    /**
+     * 删除
+     *
+     * @param id
+     * @return
+     * @throws Exception
+     */
+    boolean delete${entity}(Long id) throws Exception;
+    #end
+
+    #if(${cfg.generatorInfoMethod})
+
+    /**
+     * 根据ID获取查询对象
+     *
+     * @param id
+     * @return
+     * @throws Exception
+     */
+    ${entity} get${entity}ById(Long id) throws Exception;
+    #end
+    #if(${cfg.generatorPageMethod})
+
+    /**
+     * 获取分页对象
+     *
+     * @param ${cfg.entityObjectName}Query
+     * @return
+     * @throws Exception
+     */
+    Paging<${entity}> get${entity}PageList(${entity}Query ${cfg.entityObjectName}Query) throws Exception;
+    #end
+
+}
+#end

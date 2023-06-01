@@ -1,0 +1,118 @@
+package ${package.Controller};
+
+import ${package.Entity}.${entity};
+import ${package.Service}.${table.serviceName};
+#if(${cfg.generatorPageMethod})
+import ${cfg.queryParamPath};
+#end
+import ${cfg.queryVoPath};
+import ${cfg.apiResult};
+#if(${superControllerClassPackage})
+import ${superControllerClassPackage};
+#end
+#if(${swagger2})
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+#end
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+
+#if(${cfg.paramValidation})
+import javax.validation.Valid;
+#end
+
+import ${cfg.paging};
+
+/**
+ * <pre>
+ * $!{table.comment} 前端控制器
+ * </pre>
+ *
+ * http://stock.kim
+ * doc.stock.kim
+ *
+ * @author ${author}
+ * @since ${date}
+ */
+@Slf4j
+#if(${restControllerStyle})
+@RestController
+#else
+@Controller
+#end
+@RequestMapping("/${cfg.entityObjectName}")
+@Api("$!{table.comment}")
+#if(${kotlin})
+class ${table.controllerName}#if(${superControllerClass}) : ${superControllerClass}()#end
+
+#else
+#if(${superControllerClass})
+public class ${table.controllerName} extends ${superControllerClass} {
+#else
+public class ${table.controllerName} {
+#end
+
+    @Autowired
+    private ${table.serviceName} ${cfg.serviceObjectName};
+#if(${cfg.generatorAddMethod})
+
+    @PostMapping("/add${entity}")
+    @ApiOperation("添加${entity}对象")
+    public ApiResult<Boolean> add${entity}(#if(${cfg.paramValidation})@Valid#end @RequestBody ${entity} ${cfg.entityObjectName}) throws Exception {
+#if(${cfg.generatorStrategy} == 'ALL')
+        boolean flag = ${cfg.serviceObjectName}.save${entity}(${cfg.entityObjectName});
+#else
+        boolean flag = ${cfg.serviceObjectName}.save(${cfg.entityObjectName});
+#end
+        return ApiResult.result(flag);
+    }
+#end
+#if(${cfg.generatorUpdateMethod})
+
+    @PostMapping("/update${entity}")
+    @ApiOperation("修改${entity}对象")
+    public ApiResult<Boolean> update${entity}(#if(${cfg.paramValidation})@Valid#end @RequestBody ${entity} ${cfg.entityObjectName}) throws Exception {
+#if(${cfg.generatorStrategy} == 'ALL')
+        boolean flag = ${cfg.serviceObjectName}.update${entity}(${cfg.entityObjectName});
+#else
+        boolean flag = ${cfg.serviceObjectName}.updateById(${cfg.entityObjectName});
+#end
+        return ApiResult.result(flag);
+    }
+#end
+#if(${cfg.generatorDeleteMethod})
+
+    @PostMapping("/delete${entity}/{id}")
+    @ApiOperation("删除${entity}对象")
+    public ApiResult<Boolean> delete${entity}(@PathVariable("id") Long id) throws Exception {
+#if(${cfg.generatorStrategy} == 'ALL')
+        boolean flag = ${cfg.serviceObjectName}.delete${entity}(id);
+#else
+        boolean flag = ${cfg.serviceObjectName}.removeById(id);
+#end
+        return ApiResult.result(flag);
+    }
+#end
+#if(${cfg.generatorInfoMethod})
+
+    @GetMapping("/info/{id}")
+    @ApiOperation("获取${entity}对象详情")
+    public ApiResult<${entity}> get${entity}(@PathVariable("id") Long id) throws Exception {
+        ${entity} ${cfg.entityObjectName} = ${cfg.serviceObjectName}.get${entity}ById(id);
+        return ApiResult.ok(${cfg.entityObjectName});
+    }
+#end
+#if(${cfg.generatorPageMethod})
+
+    @PostMapping("/get${entity}PageList")
+    @ApiOperation("获取${entity}分页列表")
+    public ApiResult<Paging<${entity}>> get${entity}PageList(#if(${cfg.paramValidation})@Valid#end @RequestBody ${entity}Query ${cfg.entityObjectName}Query) throws Exception {
+        Paging<${entity}> paging = ${cfg.entityObjectName}Service.get${entity}PageList(${cfg.entityObjectName}Query);
+        return ApiResult.ok(paging);
+    }
+#end
+#end
+
+}

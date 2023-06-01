@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2019-2029 geekidea(https://github.com/geekidea)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.geekidea.stock.mapper.RiseLimitLineMapper">
+
+    <select id="getRiseLimitLineById" resultType="io.geekidea.stock.dto.vo.RiseLimitLineQueryVo">
+        select *
+        from rise_limit_line
+        where id = #{id}
+    </select>
+
+    <select id="getRiseLimitLinePageList" resultType="io.geekidea.stock.dto.vo.RiseLimitLineQueryVo">
+        select *
+        from rise_limit_line
+    </select>
+    <select id="getRiseLimitCountList" resultType="io.geekidea.stock.entity.RiseLimitLine">
+        select line_date, count(1) count
+        from stock_k_line
+        where increase >= 9.9
+          and line_date is not null
+        group by line_date
+    </select>
+
+    <select id="getRiseLimitLineList" resultType="io.geekidea.stock.dto.vo.LineNamveValueVo">
+        select line_date name, count value
+        from (
+                 select *
+                 from rise_limit_line
+                 order by line_date desc
+                 limit 136
+             ) tb
+        order by line_date
+    </select>
+
+</mapper>

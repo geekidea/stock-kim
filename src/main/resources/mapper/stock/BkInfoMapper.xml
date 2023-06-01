@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2019-2029 geekidea(https://github.com/geekidea)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.geekidea.stock.mapper.BkInfoMapper">
+    <select id="getBkInfoById" resultType="io.geekidea.stock.dto.vo.BkInfoQueryVo">
+        select *
+        from bk_info
+        where id = #{id}
+    </select>
+
+    <select id="getBkInfoPageList" resultType="io.geekidea.stock.dto.vo.BkInfoQueryVo">
+        select *
+        from bk_info
+        <where>
+            <if test="query.bkType != null">
+                and bk_type = #{query.bkType}
+            </if>
+            <if test="query.filter == true">
+                and bk_count > 2
+            </if>
+            <if test="query.bkCount != null">
+                and bk_count > #{query.bkCount}
+            </if>
+            <if test="query.searchType == 1 and query.keyword !=null and query.keyword !=''">
+                and (
+                bk_code like concat('%',#{query.keyword},'%')
+                or bk_name like concat('%',#{query.keyword},'%')
+                or bk_letter like concat('%',#{query.keyword},'%')
+                )
+            </if>
+            <if test="query.searchType == 2 and query.keyword !=null and query.keyword !=''">
+                and (
+                max_stock_code like concat('%',#{query.keyword},'%')
+                or max_stock_name like concat('%',#{query.keyword},'%')
+                )
+            </if>
+            <if test="query.bkStrategy != null and query.bkStrategy == 'rise'">
+                and bk_count > 3
+                and i5 > 0 and i10 > 0 and i20 > 0
+                and bk_price > ma5
+            </if>
+            <if test="query.bkStrategy != null and query.bkStrategy == 'fall'">
+                <![CDATA[
+                and bk_count > 3
+                and i5 < 0 and i10 < 0 and i20 < 0
+                and bk_price < ma5
+                ]]>
+            </if>
+            <if test="query.bkStrategy != null and query.bkStrategy == 'flat'">
+                <![CDATA[
+                and bk_count > 3
+                and bk_code not in(
+                    select bk_code from bk_info
+                    where bk_count>3
+                    and (
+                        (i5 > 0 and i10 > 0 and i20 > 0 and bk_price > ma5)
+                     or (i5 < 0 and i10 < 0 and i20 < 0 and bk_price < ma5)
+                    )
+                )
+                ]]>
+            </if>
+            <if test="query.searchType == 3 and query.keyword !=null and query.keyword !=''">
+                and bk_code in (
+                select distinct bk_code from bk_stock
+                where stock_code like concat('%',#{query.keyword},'%')
+                or replace(stock_name,' ','') like concat('%',#{query.keyword},'%')
+                )
+            </if>
+            <if test="query.bkOpportunity != null and query.bkOpportunity == 1">
+                and opportunity_yn = 1
+            </if>
+            <if test="query.bkIAvg != null and query.bkIAvg == 1">
+                and i_avg > 0
+            </if>
+            <if test="query.bkIAvg != null and query.bkIAvg == 0">
+                and i_avg &lt;= 0
+            </if>
+            <if test="query.optionalYn">
+                and optional_yn = 1
+            </if>
+        </where>
+    </select>
+
+    <select id="getBkInfoByBkCode" resultType="io.geekidea.stock.entity.BkInfo">
+        select *
+        from bk_info
+        where bk_code = #{bkCode}
+    </select>
+
+    <select id="getBkCodes" resultType="java.lang.String">
+        select bk_code
+        from bk_info
+    </select>
+
+    <select id="getBkCode" resultType="java.lang.String">
+        select bk_code
+        from bk_info
+        where bk_type = #{bkType}
+          and bk_name = #{bkName}
+    </select>
+
+    <select id="getMaxIncreaseBkInfo" resultType="io.geekidea.stock.entity.BkInfo">
+        select s.stock_code as max_stock_code,
+               s.stock_name as max_stock_name,
+               s.increase   as max_increase,
+               s.price      as max_increase_price
+        from bk_stock bk
+                 inner join stock s
+                            on bk.stock_code = s.stock_code
+        where bk.bk_code = #{bkCode}
+        order by s.increase desc
+        limit 1
+    </select>
+
+    <select id="getTotalAmountBkInfo" resultType="io.geekidea.stock.entity.BkInfo">
+        select sum(s.total_market_value)       as total_market_value,
+               sum(s.circulation_market_value) as total_circulation_value,
+               sum(s.trade_amount)             as total_trade_amount,
+               sum(s.trade_number)             as total_trade_number
+        from bk_stock bk
+                 inner join stock s
+                            on bk.stock_code = s.stock_code
+        where bk.bk_code = #{bkCode}
+    </select>
+
+    <select id="getIncreaseTypeBkInfo" resultType="io.geekidea.stock.dto.vo.IncreaseTypeVo">
+        select tb.increase_type,
+               count(1) count
+        from (
+                 select case
+                            when s.increase > 0 then 1
+                            when s.increase = 0 then 0
+                            else -1
+                            end increase_type
+                 from bk_stock bk
+                          inner join stock s
+                                     on bk.stock_code = s.stock_code
+                 where bk.bk_code = #{bkCode}
+             ) tb
+        group by tb.increase_type
+    </select>
+
+    <select id="getExistsBkInfoListByIndustryBkNames" resultType="java.lang.String">
+        select bk_name from bk_info
+        where bk_type = 1
+        and bk_name in
+        <foreach collection="industrys" item="industry" open="(" separator="," close=")">
+            #{industry}
+        </foreach>
+    </select>
+
+    <select id="getMaxNo" resultType="java.lang.String">
+        select bk_code
+        from bk_info
+        where bk_type = 1
+        order by bk_code desc
+        limit 1
+    </select>
+
+    <delete id="deleteNonSubStockBkInfo">
+        delete
+        from bk_info
+        where bk_code not in (
+            select distinct bk_code
+            from bk_stock
+        )
+    </delete>
+
+    <select id="getAddBkInfos" resultType="io.geekidea.stock.entity.BkInfo">
+        select *
+        from bk_info
+        where bk_code not in (
+            select distinct line_code
+            from bk_k_line
+        )
+    </select>
+
+    <select id="getStocksByBkCode" resultType="java.lang.String">
+        select stock_code
+        from bk_stock
+        where bk_code = #{bkCode}
+    </select>
+
+    <select id="getBkIncrease" resultType="java.math.BigDecimal">
+        select round(avg(increase), 2)
+        from stock
+        where stock_code in (
+            select bk_stock.stock_code
+            from bk_stock
+            where bk_code = #{bkCode}
+        )
+    </select>
+
+    <select id="getBkStatistics" resultType="io.geekidea.stock.entity.BkInfo">
+        select tb.*,
+               (
+                   select concat(s.stock_code, ',', s.stock_name, ',', s.price)
+                   from stock s
+                            inner join bk_stock bs
+                                       on s.stock_code = bs.stock_code
+                   where bs.bk_code = tb.bk_code
+                     and s.increase = tb.max_increase
+                   <if test="optionalYn">
+                     and s.optional_yn = 1
+                   </if>
+                   limit 1
+               ) max_stock_info
+        from (
+                 select bs.bk_code,
+                        round(sum(s.price), 2)          bk_price,
+                        round(avg(s.increase), 2)       bk_increase,
+                        sum(s.total_market_value)       total_market_value,
+                        sum(s.circulation_market_value) total_circulation_value,
+                        sum(s.trade_amount)             total_trade_amount,
+                        sum(s.trade_number)             total_trade_number,
+                        count(1)                        bk_count,
+                        max(s.increase)                 max_increase
+                 from stock s
+                          inner join bk_stock bs
+                                     on s.stock_code = bs.stock_code
+                 <where>
+                     <if test="optionalYn">
+                        s.optional_yn = 1
+                     </if>
+                 </where>
+                 group by bs.bk_code
+             ) tb
+    </select>
+
+    <select id="getBkIncreaseTypeCount" resultType="io.geekidea.stock.dto.vo.NameValueCount">
+        select tb.bk_code       name,
+               tb.increase_type value,
+               count(1)         count
+        from (
+                 select bs.bk_code,
+                        case
+                            when s.increase > 0 then 1
+                            when s.increase &lt; 0 then -1
+                            else 0
+                            end increase_type
+                 from stock s
+                          inner join bk_stock bs
+                                     on s.stock_code = bs.stock_code
+                 <where>
+                     <if test="optionalYn">
+                        s.optional_yn = 1
+                     </if>
+                 </where>
+             ) tb
+        group by tb.bk_code, tb.increase_type
+    </select>
+
+
+</mapper>

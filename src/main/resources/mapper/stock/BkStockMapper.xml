@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2019-2029 geekidea(https://github.com/geekidea)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.geekidea.stock.mapper.BkStockMapper">
+    <select id="getBkStockById" resultType="io.geekidea.stock.dto.vo.BkStockQueryVo">
+        select *
+        from bk_stock
+        where id = #{id}
+    </select>
+
+    <select id="getBkStockPageList" resultType="io.geekidea.stock.dto.vo.BkStockQueryVo">
+        select *
+        from bk_stock
+    </select>
+
+    <select id="getBkStocksByBkCode" resultType="io.geekidea.stock.entity.BkStock">
+        select *
+        from bk_stock
+        where bk_code = #{bkCode}
+    </select>
+
+    <select id="getBkIndustryCount" resultType="io.geekidea.stock.dto.vo.NameValueVo">
+        select s.industry name, count(1) value
+        from stock s
+                 inner join bk_stock bk
+                            on s.stock_code = bk.stock_code
+        where bk.bk_code = #{bkCode}
+        group by s.industry
+        order by value desc
+        limit 9
+    </select>
+
+    <select id="getBkConceptCount" resultType="io.geekidea.stock.dto.vo.NameValueVo">
+        select c.concept_name name, count(1) value
+        from stock_concept c
+                 inner join bk_stock bk
+                            on c.stock_code = bk.stock_code
+        where bk.bk_code = #{bkCode}
+        group by c.concept_name
+        order by value desc
+        limit 9
+    </select>
+
+    <select id="getBkStockCodesByBkCodeAndIndustry" resultType="java.lang.String">
+        select bk.stock_code
+        from bk_stock bk
+                 inner join stock s
+                            on bk.stock_code = s.stock_code
+        where bk.bk_code = #{bkCode}
+          and s.industry = #{industry}
+    </select>
+
+    <select id="getBkStockCodesByBkCodeAndConcept" resultType="java.lang.String">
+        select bk.stock_code
+        from bk_stock bk
+                 inner join stock_concept c
+                            on bk.stock_code = c.stock_code
+        where bk.bk_code = #{bkCode}
+          and c.concept_name = #{concept}
+    </select>
+
+    <delete id="deleteIndustryConceptBkStock">
+        delete
+        from bk_stock
+        where bk_code like 'I%'
+           or (bk_code like 'C%' and bk_code not like 'CC%')
+    </delete>
+
+    <delete id="deleteByStockCodes">
+        delete from bk_stock
+        where stock_code in
+        <foreach collection="deleteStockCodes" item="deleteStockCode" open="(" separator="," close=")">
+            #{deleteStockCode}
+        </foreach>
+    </delete>
+
+    <select id="getBkCodesByStockCodes" resultType="java.lang.String">
+        select bk_code from bk_stock
+        where stock_code in
+        <foreach collection="deleteStockCodes" item="deleteStockCode" open="(" separator="," close=")">
+            #{deleteStockCode}
+        </foreach>
+    </select>
+
+    <select id="getBkStockCodesByStockCodes" resultType="java.lang.String">
+        select stock_code from bk_stock
+        where bk_code = #{bkCode}
+        and stock_code in
+        <foreach collection="stockCodes" item="stockCode" open="(" separator="," close=")">
+            #{stockCode}
+        </foreach>
+    </select>
+
+</mapper>

@@ -1,0 +1,78 @@
+/*
+ * Copyright 2019-2029 geekidea(https://github.com/geekidea)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.geekidea.stock.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+
+import java.util.Date;
+
+import io.geekidea.framework.common.entity.BaseEntity;
+import com.baomidou.mybatisplus.annotation.TableId;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.Accessors;
+
+/**
+ * <pre>
+ * 股票概念内容
+ * </pre>
+ *
+ * http://stock.kim
+ * doc.stock.kim
+ *
+ * @author geekidea
+ * @since 2021-09-24
+ */
+@Data
+@Accessors(chain = true)
+@EqualsAndHashCode(callSuper = true)
+@ApiModel("StockConceptContent对象")
+public class StockConceptContent extends BaseEntity {
+
+    private static final long serialVersionUID = 1L;
+
+    @ApiModelProperty(value = "主键")
+    @TableId(value = "id", type = IdType.AUTO)
+    private Long id;
+
+    @ApiModelProperty(value = "概念批次号")
+    private String conceptBatchNo;
+
+    @ApiModelProperty(value = "股票代码")
+    private String stockCode;
+
+    @ApiModelProperty(value = "股票名称")
+    private String stockName;
+
+    @ApiModelProperty(value = "概念内容")
+    private String conceptContent;
+
+    @ApiModelProperty(value = "所属概念个数")
+    private Integer conceptCount;
+
+    @ApiModelProperty("是否自选，false：否，true：是")
+    private boolean optionalYn;
+
+    @ApiModelProperty(value = "创建时间")
+    private Date createTime;
+
+    @ApiModelProperty(value = "修改时间")
+    private Date updateTime;
+
+}

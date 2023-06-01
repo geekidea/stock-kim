@@ -1,0 +1,567 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2019-2029 geekidea(https://github.com/geekidea)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.geekidea.stock.mapper.StockMapper">
+    <select id="getStockById" resultType="io.geekidea.stock.dto.vo.StockQueryVo">
+        select *
+        from stock
+        where stock_code = #{stockCode}
+    </select>
+
+    <select id="getStockPageList" resultType="io.geekidea.stock.dto.vo.StockQueryVo">
+        select *
+        from stock
+        <where>
+            <if test="query.stockCodes!=null">
+                and stock_code in
+                <foreach collection="query.stockCodes" item="stockCode" open="(" separator="," close=")">
+                    #{stockCode}
+                </foreach>
+            </if>
+            <if test="query.type == 2">
+                and industry = #{query.industry}
+            </if>
+            <if test="query.type == 4">
+                <if test="query.distributionType == 4">
+                    and increase >=9.9
+                </if>
+                <if test="query.distributionType == 3">
+                    and increase >=5 and increase &lt; 9.9
+                </if>
+                <if test="query.distributionType == 2">
+                    and increase >=1 and increase &lt; 5
+                </if>
+                <if test="query.distributionType == 1">
+                    and increase >0 and increase &lt; 1
+                </if>
+                <if test="query.distributionType == 0">
+                    and increase = 0
+                </if>
+                <if test="query.distributionType == -1">
+                    and increase > -1 and increase &lt; 0
+                </if>
+                <if test="query.distributionType == -2">
+                    and increase > -5 and increase &lt;= -1
+                </if>
+                <if test="query.distributionType == -3">
+                    and increase > -9.9 and increase &lt;= -5
+                </if>
+                <if test="query.distributionType == -4">
+                    and increase &lt; -9.9
+                </if>
+            </if>
+            <if test="query.day51020Increase">
+                and i5 > 0 and i10 > 0 and i20 > 0
+                and i5 > i10
+                and i5 > i20
+                and i10 > i20
+            </if>
+            <if test="query.optionalYn">
+                and optional_yn = 1
+            </if>
+            <if test="query.order != null">
+                <if test="query.order.column == 'i30'">
+                    and i30 is not null
+                </if>
+                <if test="query.order.column == 'i60'">
+                    and i60 is not null
+                </if>
+                <if test="query.order.column == 'i90'">
+                    and i90 is not null
+                </if>
+                <if test="query.order.column == 'i120'">
+                    and i120 is not null
+                </if>
+                <if test="query.order.column == 'i250'">
+                    and i250 is not null
+                </if>
+                <if test="query.order.column == 'i300'">
+                    and i300 is not null
+                </if>
+            </if>
+        </where>
+    </select>
+
+    <select id="getStockPageListByConcept" resultType="io.geekidea.stock.dto.vo.StockQueryVo">
+        select c.concept_name, s.*
+        from stock s
+        inner join stock_concept c
+        on s.stock_code = c.stock_code
+        where c.concept_name = #{query.concept}
+        <if test="query.optionalYn">
+            and s.optional_yn = 1
+        </if>
+    </select>
+
+    <select id="getRiseIndustryAvg" resultType="io.geekidea.stock.dto.vo.IndustryConceptAvgVo">
+        select bk_name as name,
+        bk_increase as avg,
+        bk_count as count
+        from bk_info
+        where bk_type = 1
+        and bk_count > 3
+        and bk_increase > 0.2
+        <if test="optionalYn">
+            and optional_yn = 1
+        </if>
+        order by bk_increase desc
+        limit 30
+    </select>
+
+    <select id="getFallIndustryAvg" resultType="io.geekidea.stock.dto.vo.IndustryConceptAvgVo">
+        select bk_name as name,
+        bk_increase as avg,
+        bk_count as count
+        from bk_info
+        where bk_type = 1
+        and bk_count > 3
+        and bk_increase &lt; -0.2
+        <if test="optionalYn">
+            and optional_yn = 1
+        </if>
+        order by abs(bk_increase)
+        <if test="asc == false">
+            desc
+        </if>
+
+        limit 30
+    </select>
+
+    <select id="getRiseConceptAvg" resultType="io.geekidea.stock.dto.vo.IndustryConceptAvgVo">
+        select bk_name as name,
+        bk_increase as avg,
+        bk_count as count
+        from bk_info
+        where bk_type = 2
+        and bk_count > 3
+        and bk_increase > 0.2
+        <if test="optionalYn">
+            and optional_yn = 1
+        </if>
+        order by bk_increase desc
+        limit 30
+    </select>
+
+    <select id="getFallConceptAvg" resultType="io.geekidea.stock.dto.vo.IndustryConceptAvgVo">
+        select bk_name as name,
+        bk_increase as avg,
+        bk_count as count
+        from bk_info
+        where bk_type = 2
+        and bk_count > 3
+        and bk_increase &lt; -0.2
+        <if test="optionalYn">
+            and optional_yn = 1
+        </if>
+        order by abs(bk_increase)
+        <if test="asc == false">
+            desc
+        </if>
+        limit 30
+    </select>
+
+    <select id="getIndustryRiseFallCount" resultType="io.geekidea.stock.dto.vo.NameValuePercentageVo">
+        select case
+        when increase > 0 then 1
+        when increase = 0 then 0
+        when increase <![CDATA[<]]> 0 then -1
+        end name,
+        count(1) value
+        from stock
+        <where>
+            <if test="optionalYn">
+                optional_yn = 1
+            </if>
+        </where>
+        group by name
+        order by name desc
+    </select>
+
+    <select id="getConceptRiseFallCount" resultType="io.geekidea.stock.dto.vo.NameValuePercentageVo">
+
+    </select>
+
+    <select id="getStockMarketOverview" resultType="io.geekidea.stock.dto.vo.NameValuePercentageVo">
+        select type name,
+        count(1) value
+        from (
+        select case
+        when increase > 0 then 1
+        when increase = 0 then 0
+        else -1
+        end type
+        from stock
+        <where>
+            <if test="optionalYn">
+                optional_yn = 1
+            </if>
+        </where>
+        ) tb
+        group by name
+        order by name
+    </select>
+
+    <select id="getIndustryMarketOverview" resultType="io.geekidea.stock.dto.vo.NameValuePercentageVo">
+        select type name,
+        count(1) value
+        from (
+        select case
+        when avg > 0 then 1
+        when avg = 0 then 0
+        else -1
+        end type
+        from (
+        select avg(increase) avg
+        from stock
+        <where>
+            <if test="optionalYn">
+                optional_yn = 1
+            </if>
+        </where>
+        group by industry
+        ) ii
+        ) tb
+        group by name
+        order by name
+    </select>
+
+    <select id="getConceptMarketOverview" resultType="io.geekidea.stock.dto.vo.NameValuePercentageVo">
+        select type name,
+        count(1) value
+        from (
+        select case
+        when avg > 0 then 1
+        when avg = 0 then 0
+        else -1
+        end type
+        from (
+        select avg(s.increase) avg
+        from stock s
+        inner join stock_concept c
+        on s.stock_code = c.stock_code
+        <where>
+            <if test="optionalYn">
+                s.optional_yn = 1
+            </if>
+        </where>
+        group by c.concept_name
+        having count(1) > 5
+        ) ii
+        ) tb
+        group by name
+        order by name
+    </select>
+
+    <select id="getRiseFallLimit" resultType="io.geekidea.stock.dto.vo.NameValuePercentageVo">
+        select case
+        when increase >= 9.9 then 1
+        when increase <![CDATA[<=]]> -9.9 then -1
+        end name,
+        count(1) value
+        from stock
+        where (increase >= 9.9
+        or increase <![CDATA[<=]]> -9.9)
+        <if test="optionalYn == true">
+            and optional_yn = 1
+        </if>
+        group by name
+        order by name desc
+    </select>
+
+    <select id="getIncreaseDistribution" resultType="io.geekidea.stock.dto.vo.NameValuePercentageVo">
+        select case
+        when increase >= 9.9 then 4
+        when increase >= 5 and increase &lt; 9.9 then 3
+        when increase >= 1 and increase &lt; 5 then 2
+        when increase > 0 and increase &lt; 1 then 1
+        when increase = 0 then 0
+        when increase > -1 and increase &lt; 0 then -1
+        when increase > -5 and increase &lt;= - 1 then -2
+        when increase > -9.9 and increase &lt;= - 5 then -3
+        when increase &lt;= - 9.9 then -4
+        end name,
+        count(1) value
+        from stock
+        <where>
+            <if test="optional_yn">
+                optional_yn = 1
+            </if>
+        </where>
+        group by name
+        order by name desc
+    </select>
+
+    <select id="getIndustryStatistics" resultType="io.geekidea.stock.entity.IndustryIndex">
+        select tb.industry industry_name,
+               tb.avg      industryIndex,
+               tb.total_market_value,
+               tb.total_circulation_value,
+               tb.total_trade_amount,
+               tb.total_trade_number,
+               tb.count    industryCount,
+               tb.max_increase,
+               (select concat(s.stock_code, ',', s.stock_name, ',', s.price)
+                from stock s
+                where s.industry = tb.industry
+                  and s.increase = tb.max_increase
+                limit 1)   stock_info
+        from (
+                 select industry,
+                        round(avg(increase), 2)       avg,
+                        sum(total_market_value)       total_market_value,
+                        sum(circulation_market_value) total_circulation_value,
+                        sum(trade_amount)             total_trade_amount,
+                        sum(trade_number)             total_trade_number,
+                        count(1)                      count,
+                        max(increase)                 max_increase
+                 from stock
+                 group by industry
+                 order by avg desc
+             ) tb
+    </select>
+
+    <select id="getConceptStatistics" resultType="io.geekidea.stock.entity.ConceptIndex">
+        select tb.concept_name,
+               tb.avg    concept_index,
+               tb.total_market_value,
+               tb.total_circulation_value,
+               tb.total_trade_amount,
+               tb.total_trade_number,
+               tb.count  conceptCount,
+               tb.max_increase,
+               (select concat(s.stock_code, ',', s.stock_name, ',', s.price, ',', s.industry)
+                from stock s
+                         inner join stock_concept sc
+                                    on s.stock_code = sc.stock_code
+                where sc.concept_name = tb.concept_name
+                  and s.increase = tb.max_increase
+                limit 1) stock_info
+        from (
+                 select c.concept_name,
+                        round(avg(k.increase), 2)     avg,
+                        sum(total_market_value)       total_market_value,
+                        sum(circulation_market_value) total_circulation_value,
+                        sum(k.trade_amount)           total_trade_amount,
+                        sum(k.trade_number)           total_trade_number,
+                        count(1)                      count,
+                        max(k.increase)               max_increase
+                 from stock k
+                          inner join stock_concept c
+                                     on k.stock_code = c.stock_code
+                 group by c.concept_name
+                 having count > 5
+                 order by avg desc
+             ) tb
+    </select>
+
+    <select id="getConceptNameInfoList" resultType="io.geekidea.stock.dto.vo.ConceptNameInfoVo">
+        select x.stock_code, group_concat(y.concept_name order by avg desc) concept_name_info
+        from (
+                 select s.stock_code, sc.concept_name
+                 from stock s
+                          inner join stock_concept sc
+                                     on s.stock_code = sc.stock_code
+             ) x
+                 inner join (
+            select concept_name, concept_index avg
+            from concept_index
+        ) y
+                            on x.concept_name = y.concept_name
+        group by x.stock_code
+    </select>
+
+    <select id="getNonKLineDataStocks" resultType="io.geekidea.stock.entity.Stock">
+        select *
+        from stock
+        where stock_code not in (
+            select distinct stock_code
+            from stock_k_line
+        )
+    </select>
+
+    <select id="getCountBybeforeEndDate" resultType="java.lang.Integer">
+        select count(1)
+        from stock_k_line
+        where line_code = #{lineCode}
+          and line_date > #{beforeEndDate}
+    </select>
+
+    <select id="getRecentDiffData" resultType="io.geekidea.stock.entity.Stock">
+        select *
+        from stock
+        where trade_number != 0
+          and open_price != 0
+          and stock_code not in (
+            select line_code
+            from stock_k_line
+            where line_date > #{beforeEndDate}
+            group by line_code
+        )
+        order by stock_code
+    </select>
+
+    <select id="getTodayDiffData" resultType="io.geekidea.stock.entity.Stock">
+        select *
+        from stock
+        where trade_number != 0
+          and open_price != 0
+          and stock_code not in (
+            select line_code
+            from stock_k_line
+            where line_date = date_format(now(), '%Y-%m-%d')
+            group by line_code
+        )
+        order by stock_code
+    </select>
+
+    <select id="getSqlQueryMetaDataTest" resultType="java.util.Map">
+        select stock_code code, stock_name name, price price
+        from stock
+        limit 10
+    </select>
+
+    <select id="getStockPageListByBkCode" resultType="io.geekidea.stock.dto.vo.StockQueryVo">
+        select s.*
+        from stock s
+        inner join bk_stock bk
+        on s.stock_code = bk.stock_code
+        where bk.bk_code = #{query.keyword}
+        <if test="query.industry!=null and query.industry!=''">
+            and s.industry = #{query.industry}
+        </if>
+        <if test="query.optionalYn">
+            and s.optional_yn = 1
+        </if>
+    </select>
+
+    <select id="getStockPageListByBkCodeAndConcept" resultType="io.geekidea.stock.dto.vo.StockQueryVo">
+        select s.*
+        from stock s
+        inner join bk_stock bk
+        on s.stock_code = bk.stock_code
+        inner join stock_concept c
+        on bk.stock_code = c.stock_code
+        where bk.bk_code = #{query.keyword}
+        and c.concept_name = #{query.concept}
+        <if test="query.optionalYn">
+            and s.optional_yn = 1
+        </if>
+    </select>
+
+    <select id="getStockBasicList" resultType="io.geekidea.stock.dto.vo.StockBasicVo">
+        select
+        stock_code,
+        stock_name,
+        price,
+        increase
+        from stock
+        <where>
+            <if test="optionalYn">
+                optional_yn = 1
+            </if>
+        </where>
+        order by ${order.column}
+        <if test="order.asc == false">
+            desc
+        </if>
+    </select>
+
+    <select id="getDeleteStockCodes" resultType="java.lang.String">
+        select tb.stock_code
+        from (
+                 select distinct stock_code
+                 from stock_k_line
+             ) tb
+        where tb.stock_code not in (
+            select stock_code
+            from stock
+        )
+    </select>
+
+    <select id="getAddStockCodes" resultType="java.lang.String">
+        select *
+        from stock
+        where stock_code not in (
+            select distinct line_code
+            from stock_k_line
+        )
+    </select>
+
+    <select id="getStockListByStockCodes" resultType="io.geekidea.stock.entity.Stock">
+        select * from stock
+        where stock_code in
+        <foreach collection="addStockCodes" item="addStockCode" open="(" separator="," close=")">
+            #{addStockCode}
+        </foreach>
+    </select>
+
+    <select id="getStockCodeList" resultType="java.lang.String">
+        select stock_code
+        from stock
+        <where>
+            <if test="optionalYn">
+                optional_yn = 1
+            </if>
+        </where>
+    </select>
+
+    <select id="getAddStock" resultType="io.geekidea.stock.entity.Stock">
+        select *
+        from stock
+        where stock_code not in (
+            select distinct stock_code
+            from stock_k_line
+        )
+    </select>
+
+    <select id="getFixAddStock" resultType="io.geekidea.stock.entity.Stock">
+        select *
+        from stock
+        where stock_code in (
+            select stock_code
+            from stock_k_line
+            group by stock_code
+            having count(1) = 1
+        )
+    </select>
+
+    <select id="getLastTradeDate" resultType="java.lang.String">
+        select max(real_date)
+        from stock
+        <where>
+            <if test="optionalYn">
+                optional_yn = 1
+            </if>
+        </where>
+    </select>
+
+    <select id="getStockByKeyword" resultType="io.geekidea.stock.dto.vo.StockSearchVo">
+        select stock_code, stock_name, market_type, market_type_name
+        from stock
+        where stock_code like concat('%', #{keyword}, '%')
+           or stock_name like concat('%', #{keyword}, '%')
+           or stock_letter like concat('%', #{keyword}, '%')
+    </select>
+
+    <select id="getNotOptionalStockCodeList" resultType="java.lang.String">
+        select stock_code
+        from stock
+        where optional_yn = 0
+    </select>
+
+</mapper>

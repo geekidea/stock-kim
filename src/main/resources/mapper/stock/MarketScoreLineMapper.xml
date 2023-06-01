@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2019-2029 geekidea(https://github.com/geekidea)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.geekidea.stock.mapper.MarketScoreLineMapper">
+
+    <select id="getMarketScoreLineById" resultType="io.geekidea.stock.dto.vo.MarketScoreLineQueryVo">
+        select *
+        from market_score_line
+        where id = #{id}
+    </select>
+
+    <select id="getMarketScoreLinePageList" resultType="io.geekidea.stock.dto.vo.MarketScoreLineQueryVo">
+        select *
+        from market_score_line
+    </select>
+
+    <select id="getMarketScoreLineList" resultType="io.geekidea.stock.dto.vo.LineNamveValueVo">
+        select line_date name, if(score is null, 0, score) value
+        from (
+                 select *
+                 from market_score_line
+                 order by line_date desc
+                 limit 136
+             ) tb
+        order by line_date
+    </select>
+
+    <select id="getStockMarketOverview" resultType="io.geekidea.stock.dto.vo.NameValuePercentageVo">
+        select type     name,
+               count(1) value
+        from (
+                 select case
+                            when increase > 0 then 1
+                            when increase = 0 then 0
+                            else -1
+                            end type
+                 from stock_k_line
+                 where line_date = #{lineDate}
+                   and increase is not null
+             ) tb
+        group by name
+        order by name
+    </select>
+
+    <select id="getIndustryMarketOverview" resultType="io.geekidea.stock.dto.vo.NameValuePercentageVo">
+        select type     name,
+               count(1) value
+        from (
+                 select case
+                            when avg > 0 then 1
+                            when avg = 0 then 0
+                            else -1
+                            end type
+                 from (
+                          select avg(k.increase) avg
+                          from stock_k_line k
+                                   inner join stock s
+                                              on k.line_code = s.stock_code
+                          where k.line_date = #{lineDate}
+                            and k.increase is not null
+                          group by s.industry
+                      ) ii
+             ) tb
+        group by name
+        order by name
+    </select>
+
+    <select id="getConceptMarketOverview" resultType="io.geekidea.stock.dto.vo.NameValuePercentageVo">
+        select type     name,
+               count(1) value
+        from (
+                 select case
+                            when avg > 0 then 1
+                            when avg = 0 then 0
+                            else -1
+                            end type
+                 from (
+                          select avg(k.increase) avg
+                          from stock_k_line k
+                                   inner join stock s
+                                              on k.line_code = s.stock_code
+                                   inner join stock_concept c
+                                              on s.stock_code = c.stock_code
+                          where k.line_date = #{lineDate}
+                            and k.increase is not null
+                          group by c.concept_name
+                          having count(1) > 5
+                      ) ii
+             ) tb
+        group by name
+        order by name
+    </select>
+
+    <select id="getIncreaseDistribution" resultType="io.geekidea.stock.dto.vo.NameValuePercentageVo">
+        <![CDATA[
+        select case
+                   when increase >= 9.9 then 4
+                   when increase >= 5 and increase < 9.9 then 3
+                   when increase >= 1 and increase < 5 then 2
+                   when increase > 0 and increase < 1 then 1
+                   when increase = 0 then 0
+                   when increase > -1 and increase < 0 then -1
+                   when increase > -5 and increase <= - 1 then -2
+                   when increase > -9.9 and increase <= - 5 then -3
+                   when increase <= - 9.9 then -4
+                   end  name,
+               count(1) value
+        from stock_k_line
+        where line_date = #{lineDate}
+          and increase is not null
+        group by name
+        order by name desc
+        ]]>
+    </select>
+
+</mapper>

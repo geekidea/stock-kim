@@ -1,0 +1,215 @@
+# stock-kim Common Config
+
+############################# 访问路径、端口tomcat start #############################
+server:
+  port: 8888
+  servlet:
+    context-path: /
+  tomcat:
+    max-threads: 1000
+    min-spare-threads: 30
+    uri-encoding: UTF-8
+############################# 访问路径、端口tomcat end ###############################
+
+
+################################ spring config start ###############################
+spring:
+  application:
+    name: stock
+  http:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  jackson:
+    date-format: yyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+  banner:
+    charset: UTF-8
+    location: classpath:banner.txt
+
+# 当前项目maven激活环境，例如：local/dev/test，对应pom.xml中profile设置值
+---
+spring:
+  profiles:
+    active: dev
+
+################################ spring config end #################################
+
+
+############################## spring-boot-plus start ##############################
+spring-boot-plus:
+  # 是否启用ansi控制台输出有颜色的字体
+  enable-ansi: true
+  # 是否启用验证码
+  enable-verify-code: false
+  # 过滤器配置
+  filter:
+    # 请求路径Filter配置
+    request-path:
+      enabled: true
+      include-paths: /**
+      # 排除路径，多行字符串配置
+      exclude-paths: |
+        /applications/**,/actuator/**,/instances/**,/logfile,/sba-settings.js,/assets/img/favicon.png,
+        /swagger-ui.html,/swagger-resources/**,/webjars/springfox-swagger-ui/**,/v2/api-docs,/favicon.ico
+  # 拦截器配置
+  interceptor:
+    permission:
+      enabled: false
+      include-paths: /**
+      exclude-paths: /swagger-resources/**,/api-docs/**,/v2/api-docs/**,/adminLogin,/sysLogin,/login.html,/verificationCode,/doc/**,/error/**,/docs,/resource/**
+    resource:
+      enabled: true
+      include-paths: ${spring-boot-plus.resource-access-patterns}
+    upload:
+      enabled: true
+      include-paths: /upload/**
+    download:
+      enabled: true
+      include-paths: /download/**
+
+  # AOP配置
+  aop:
+    log:
+      # 是否启用
+      enabled: true
+      # 1.请求和响应分开，按照执行顺序打印
+      # 2.ThreadLocal线程绑定，方法执行结束时，连续打印请求和响应日志
+      # 3.ThreadLocal线程绑定，方法执行结束时，同时打印请求和响应日志
+      print-type: 1
+      # 请求日志在控制台是否格式化输出，local环境建议开启，服务器环境设置为false
+      request-log-format: false
+      # 响应日志在控制台是否格式化输出，local环境建议开启，服务器环境设置为false
+      response-log-format: false
+
+  # 文件上传下载配置
+  # 上传路径配置
+  upload-path: /opt/upload/
+  # 资源访问路径
+  resource-access-path: /resource/
+  # 资源访问路径匹配：/resource/**
+  resource-access-patterns: ${spring-boot-plus.resource-access-path}**
+  # 资源访问全路径前缀：http://localhost:8888/resource/
+  resource-access-url: http://localhost:${server.port}${server.servlet.context-path}${spring-boot-plus.resource-access-path}
+  # 全局允许上传的类型
+  allow-upload-file-extensions: jpg,png,docx,xlsx,pptx,pdf
+  allow-download-file-extensions: jpg,png,docx,xlsx,pptx,pdf
+
+  ############################ CORS start ############################
+  # CORS跨域配置，默认允许跨域
+  cors:
+    # 是否启用跨域，默认启用
+    enable: true
+    # CORS过滤的路径，默认：/**
+    path: /**
+    # 允许访问的源
+    allowed-origins: '*'
+    # 允许访问的请求头
+    allowed-headers: x-requested-with,content-type,token
+    # 是否允许发送cookie
+    allow-credentials: true
+    # 允许访问的请求方式
+    allowed-methods: OPTION,GET,POST
+    # 允许响应的头
+    exposed-headers: token
+    # 该响应的有效时间默认为30分钟，在有效时间内，浏览器无须为同一请求再次发起预检请求
+    max-age: 1800
+
+  ############################ CORS end ##############################
+
+  ########################## Resource start ##########################
+  # 静态资源访问配置
+  resource-handlers: |
+    /static/**=classpath:/static/
+    /templates/**=classpath:/templates/
+    swagger-ui.html=classpath:/META-INF/resources/
+    /webjars/**=classpath:/META-INF/resources/webjars/
+  ########################## Resource end ############################
+
+############################### spring-boot-plus end ###############################
+
+
+############################### mybatis-plus start #################################
+mybatis-plus:
+  # 启动时是否检查MyBatis XML文件是否存在
+  check-config-location: true
+  # MyBatis原生配置
+  configuration:
+    # 字段名称下划线转驼峰命名
+    map-underscore-to-camel-case: true
+  global-config:
+#    sql-parser-cache: true
+    db-config:
+      # update忽略非空判断，修改全部
+      update-strategy: IGNORED
+      # 全局默认主键类型
+      id-type: AUTO
+      # 逻辑已删除值(默认为 1)
+      logic-delete-value: 1
+      # 逻辑未删除值(默认为 0)
+      logic-not-delete-value: 0
+  # mapper xml映射路径
+  mapper-locations: classpath*:mapper/**/*Mapper.xml
+################################ mybatis-plus end ##################################
+
+############################### HikariCP 数据源配置 start ################################
+---
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+    cachePrepStmts: true
+    prepStmtCacheSize: 20
+    prepStmtCacheSqlLimit: 1024
+    useServerPrepStmts: true
+    useLocalSessionState: true
+    rewriteBatchedStatements: true
+    cacheResultSetMetadata: true
+    cacheServerConfiguration: true
+    elideSetAutoCommits: true
+    maintainTimeStats: false
+    hikari:
+      minimum-idle: 10
+      maximum-pool-size: 100
+      idle-timeout: 10000
+      max-lifetime: 1600000
+      connection-timeout: 60000
+############################### HikariCP 数据源配置 end ################################
+
+
+############################### Redis 公共配置 start ###############################
+---
+spring:
+  redis:
+    timeout: 10s
+    lettuce:
+      pool:
+        max-active: 200
+        max-idle: 8
+        max-wait: 10s
+        min-idle: 2
+      shutdown-timeout: 3s
+############################### Redis 公共配置 end ##################################
+
+
+#################################### Swagger start #################################
+# swagger配置
+swagger:
+  base:
+    package: io.geekidea.stock
+  contact:
+    email: geekidea@qq.com
+    name: geekidea
+    url: ''
+  description: ''
+  title: Stock
+  url: ''
+  version: 1.0
+#################################### Swagger end ###################################
+
+#logging. com.mysql.jdbc.JDBC4Connection
+logging:
+  level:
+    com.mysql.jdbc.JDBC4Connection: error
+    com.zaxxer.hikari.pool.HikariProxyConnection: error

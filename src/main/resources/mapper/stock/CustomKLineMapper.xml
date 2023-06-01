@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2019-2029 geekidea(https://github.com/geekidea)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.geekidea.stock.mapper.CustomKLineMapper">
+
+    <select id="getCustomKLineById" resultType="io.geekidea.stock.dto.vo.CustomKLineQueryVo">
+        select *
+        from custom_k_line
+        where id = #{id}
+    </select>
+
+    <select id="getCustomKLinePageList" resultType="io.geekidea.stock.dto.vo.CustomKLineQueryVo">
+        select *
+        from custom_k_line
+    </select>
+
+    <select id="getRangeFallMaxPriceList" resultType="io.geekidea.stock.entity.CustomKLine">
+        select line_code, max(high_price) max
+        from stock_k_line
+        where line_date >= #{startDate}
+          and line_code in (
+            select stock_code
+            from stock
+            where listing_date &lt; #{startDate}
+        )
+        group by line_code
+    </select>
+
+    <select id="getRangeFallMaxDateList" resultType="io.geekidea.stock.entity.CustomKLine">
+        select line_code, min(line_date) max_date
+        from stock_k_line
+        where line_date >= #{startDate}
+          and (line_code = #{customKLine.lineCode} and high_price = #{customKLine.max})
+        group by line_code
+    </select>
+
+    <select id="getRangeFallMinPriceList" resultType="io.geekidea.stock.entity.CustomKLine">
+        select line_code, min(low_price) min
+        from stock_k_line
+        where line_date >= #{startDate}
+          and (line_code = #{customKLine.lineCode} and line_date > #{customKLine.maxDate})
+        group by line_code
+    </select>
+
+    <select id="getRangeFallMinDateList" resultType="io.geekidea.stock.entity.CustomKLine">
+        select line_code, min(line_date) min_date
+        from stock_k_line
+        where line_date >= #{startDate}
+          and (line_code = #{customKLine.lineCode} and line_date > #{customKLine.maxDate} and
+               low_price = #{customKLine.min})
+        group by line_code
+    </select>
+
+    <select id="getRangeRiseMinPriceList" resultType="io.geekidea.stock.entity.CustomKLine">
+        select line_code, min(low_price) min
+        from stock_k_line
+        where line_date >= #{startDate}
+          and line_code in (
+            select stock_code
+            from stock
+            where listing_date &lt; #{startDate}
+        )
+        group by line_code
+    </select>
+
+    <select id="getRangeRiseMinDateList" resultType="io.geekidea.stock.entity.CustomKLine">
+        select line_code, min(line_date) min_date
+        from stock_k_line
+        where line_date >= #{startDate}
+          and (line_code = #{customKLine.lineCode} and low_price = #{customKLine.min})
+        group by line_code
+    </select>
+
+    <select id="getRangeRiseMaxPriceList" resultType="io.geekidea.stock.entity.CustomKLine">
+        select line_code, max(high_price) max
+        from stock_k_line
+        where line_date >= #{startDate}
+          and (line_code = #{customKLine.lineCode} and line_date > #{customKLine.minDate})
+        group by line_code
+    </select>
+    <select id="getRangeRiseMaxDateList" resultType="io.geekidea.stock.entity.CustomKLine">
+        select line_code, min(line_date) max_date
+        from stock_k_line
+        where line_date >= #{startDate}
+          and (line_code = #{customKLine.lineCode} and line_date > #{customKLine.minDate} and
+               high_price = #{customKLine.max})
+        group by line_code
+    </select>
+
+</mapper>

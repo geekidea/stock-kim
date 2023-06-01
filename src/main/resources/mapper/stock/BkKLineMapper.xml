@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2019-2029 geekidea(https://github.com/geekidea)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.geekidea.stock.mapper.BkKLineMapper">
+
+    <select id="getBkKLineById" resultType="io.geekidea.stock.dto.vo.BkKLineQueryVo">
+        select *
+        from bk_k_line
+        where id = #{id}
+    </select>
+
+    <select id="getBkKLinePageList" resultType="io.geekidea.stock.dto.vo.BkKLineQueryVo">
+        select *
+        from bk_k_line
+    </select>
+
+    <delete id="deleteByBkCode">
+        delete
+        from bk_k_line
+        where line_code = #{bkCode}
+          and line_date >= #{startDate}
+    </delete>
+
+    <select id="getBkKLines" resultType="io.geekidea.stock.entity.BkKLine">
+        select line_date,
+        sum(open_price) open_price,
+        sum(close_price) close_price,
+        sum(high_price) high_price,
+        sum(low_price) low_price,
+        sum(trade_number) trade_number,
+        sum(trade_amount) trade_amount,
+        avg(turnover_rate) turnover_rate,
+        avg(amplitude) amplitude,
+        avg(increase) increase
+        from stock_k_line
+        where stock_code in (select stock_code
+        from bk_stock
+        where bk_code = #{bkCode})
+        <if test="startDate!=null and startDate!=''">
+            and line_date >= #{startDate}
+        </if>
+        group by line_date
+        order by line_date desc
+    </select>
+
+    <select id="getBkKLinesByKeyword" resultType="io.geekidea.stock.entity.BkKLine">
+        select *
+        from bk_k_line
+        where (line_code = #{keyword}
+        or line_name = #{keyword})
+        <if test="startDate != null and startDate != ''">
+            and line_date >= #{startDate}
+        </if>
+
+        order by line_date
+    </select>
+
+    <select id="getBkKLineByStockCodes" resultType="io.geekidea.stock.entity.BkKLine">
+        select line_date,
+        sum(open_price) open_price,
+        sum(close_price) close_price,
+        sum(high_price) high_price,
+        sum(low_price) low_price,
+        sum(trade_number) trade_number,
+        sum(trade_amount) trade_amount,
+        avg(turnover_rate) turnover_rate,
+        avg(amplitude) amplitude,
+        avg(increase) increase
+        from stock_k_line
+        where line_code in (
+        <foreach collection="stockCodes" item="stockCode" separator=",">
+            #{stockCode}
+        </foreach>
+        )
+        <if test="startDate != null and startDate != ''">
+            and line_date >= #{startDate}
+        </if>
+        group by line_date
+        order by line_date
+    </select>
+
+    <select id="getBkKLinesByBkCode" resultType="io.geekidea.stock.entity.BkKLine">
+        select * from bk_k_line
+        where line_code = #{bkCode}
+        <if test="startDate != null and startDate != ''">
+            and line_date >= #{startDate}
+        </if>
+        order by line_date
+    </select>
+
+    <select id="getMaxLineDate" resultType="java.lang.String">
+        select max(line_date)
+        from bk_k_line
+    </select>
+
+    <select id="getBkKLinesByStock" resultType="io.geekidea.stock.entity.BkKLine">
+        select real_date          line_date,
+               sum(open_price)    open_price,
+               sum(price)         close_price,
+               sum(high_price)    high_price,
+               sum(low_price)     low_price,
+               sum(trade_number)  trade_number,
+               sum(trade_amount)  trade_amount,
+               avg(turnover_rate) turnover_rate,
+               avg(amplitude)     amplitude,
+               avg(increase)      increase
+        from stock
+        where stock_code in (select stock_code
+                             from bk_stock
+                             where bk_code = #{bkCode})
+        group by real_date
+    </select>
+
+    <delete id="deleteIndustryConceptBkKLine">
+
+    </delete>
+
+    <delete id="deleteByBkCodes">
+        delete from bk_k_line
+        where line_code in
+        <foreach collection="deleteBkCodes" item="deleteBkCode" open="(" separator="," close=")">
+            #{deleteBkCode}
+        </foreach>
+    </delete>
+
+    <delete id="deleteAllByBkCode">
+        delete
+        from bk_k_line
+        where line_code = #{bkCode}
+    </delete>
+
+    <select id="getRealBkKLines" resultType="io.geekidea.stock.entity.BkKLine">
+        select bs.bk_code                     line_code,
+               max(i.bk_name)                 line_name,
+               max(s.real_date)               line_date,
+               sum(s.open_price)              open_price,
+               sum(s.price)                   close_price,
+               sum(s.high_price)              high_price,
+               sum(s.low_price)               low_price,
+               sum(s.trade_number)            trade_number,
+               sum(s.trade_amount)            trade_amount,
+               round(avg(s.turnover_rate), 2) turnover_rate,
+               round(avg(s.amplitude), 2)     amplitude,
+               round(avg(s.increase), 2)      increase
+        from stock s
+                 inner join bk_stock bs
+                            on s.stock_code = bs.stock_code
+                 inner join bk_info i
+                            on bs.bk_code = i.bk_code
+        <where>
+            <if test="optionalYn">
+                s.optional_yn = 1
+            </if>
+        </where>
+        group by bs.bk_code
+    </select>
+
+    <select id="getExistsBkKLine" resultType="io.geekidea.stock.entity.BkKLine">
+        select * from bk_k_line
+        where line_date = #{lineDate}
+        <if test="optionalYn">
+            and optional_yn = 1
+        </if>
+        and line_code in
+        <foreach collection="bkCodes" item="bkCode" open="(" separator="," close=")">
+            #{bkCode}
+        </foreach>
+    </select>
+
+    <select id="getTop61BkKLineListByBkCode" resultType="io.geekidea.stock.entity.BkKLine">
+        select *
+        from bk_k_line
+        where line_code = #{bkCode}
+        order by line_date desc
+        limit 61
+    </select>
+
+</mapper>
